@@ -1,4 +1,4 @@
-# Variable that contains user credentialsto access twitter api
+# Variable that contains user credentials to access twitter api
 
 ACCESS_TOKEN = ""
 ACCESS_TOKEN_SECRET = ""

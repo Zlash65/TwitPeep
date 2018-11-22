@@ -1,6 +1,11 @@
 # TwitPeep
 
 Generate various reports using Twitter Streaming API.
+ 
+Enter a keyword and..
+1. Get the User that tweeted recently using that keyword and no. of tweets from him/her.
+2. Data streams continuously and links from these data are displayed along with a list of domain that were used most.
+3. From streaming data, unique words after excluding common articles, pronouns, etc are mapped and top 10 words are listed by their count.
 
 * Note:- Works with python 2 only for now.
 

@@ -113,4 +113,7 @@ if __name__ == "__main__":
 	except NameError:
 		keyword = input("Please enter the keyword you want to track : ")
 
+	print("Please wait while the report is being generated.")
+	print("The reports will be printed every 1 minute.")
+
 	streamer.stream_tweets([keyword])

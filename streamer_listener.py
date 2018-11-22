@@ -15,6 +15,13 @@ class StreamerListener(StreamListener):
 		''' capture connection to mongo '''
 		self.db = db
 
+		# download stopwords
+		try:
+			s = set(stopwords.words('english'))
+		except Exception as e:
+			import nltk
+			nltk.download('stopwords')
+
 	def on_data(self, data):
 		''' each tweet calls this method where data contains the information about the tweet '''
 
