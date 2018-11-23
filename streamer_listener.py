@@ -2,6 +2,7 @@ from tweepy.streaming import StreamListener
 import json, re, tldextract, string
 from nltk.corpus import stopwords
 from collections import Counter
+from datetime import datetime
 
 # Python 2 and 3 support
 try:
@@ -14,6 +15,7 @@ class StreamerListener(StreamListener):
 	def __init__(self, db):
 		''' capture connection to mongo '''
 		self.db = db
+		self.timestamp = datetime.now()
 
 		# download stopwords
 		try:
@@ -26,6 +28,7 @@ class StreamerListener(StreamListener):
 		''' each tweet calls this method where data contains the information about the tweet '''
 
 		data = json.loads(data)
+		self.timestamp = datetime.now()
 
 		self.store_user_report_data(data)
 		self.parse_links_report_data(data)
@@ -50,13 +53,17 @@ class StreamerListener(StreamListener):
 		if exists:
 			self.db.tweet_count.update_one(
 				{'tweets': data['user']['screen_name']},
-				{'$set': {'tweets': data['user']['statuses_count']}},
+				{'$set': {
+					'tweets': exists['tweets']+1,
+					'timestamp': self.timestamp
+				}},
 				upsert=False
 			)
 		else:
 			self.db.tweet_count.insert({
 				'user': data['user']['screen_name'],
-				'tweets': data['user']['statuses_count']
+				'tweets': 1,
+				'timestamp': self.timestamp
 			})
 
 	def parse_links_report_data(self, data):
@@ -97,13 +104,17 @@ class StreamerListener(StreamListener):
 		if exists:
 			self.db.link_url.update_one(
 				{'domain': extract.domain},
-				{'$set': {'count': exists["count"]+1}},
+				{'$set': {
+					'count': exists["count"]+1,
+					'timestamp': self.timestamp
+				}},
 				upsert=False
 			)
 		else:
 			self.db.link_url.insert({
 				'domain': extract.domain,
-				'count': 1
+				'count': 1,
+				'timestamp': self.timestamp
 			})
 
 	def parse_words(self, data):
@@ -134,11 +145,15 @@ class StreamerListener(StreamListener):
 		if exists:
 			self.db.words.update_one(
 				{'word': word},
-				{'$set': {'count': exists["count"] + count}},
+				{'$set': {
+					'count': exists["count"] + count,
+					'timestamp': self.timestamp
+				}},
 				upsert=False
 			)
 		else:
 			self.db.words.insert({
 				'word': word,
-				'count': count
+				'count': count,
+				'timestamp': self.timestamp
 			})

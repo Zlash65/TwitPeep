@@ -2,6 +2,7 @@ from tweepy import OAuthHandler, Stream
 from streamer_listener import StreamerListener
 from pymongo import MongoClient
 from prettytable import PrettyTable
+from datetime import datetime, timedelta
 
 import twitter_credentials as creds, time, pymongo
 
@@ -22,6 +23,7 @@ class TwitterStreamer():
 		self.connection = MongoClient(creds.DB_HOST, creds.DB_PORT)
 		self.db = self.connection[creds.DB_NAME]
 		self.db.authenticate(creds.DB_USER, creds.DB_PASS)
+		self.time_diff = datetime.now()
 		self.clear_tables()
 
 	def stream_tweets(self, keywords):
@@ -55,7 +57,9 @@ class TwitterStreamer():
 		self.db.words.remove({})
 
 	def print_data(self, minute):
-		print("Data since {0} minutes".format(minute))
+		print("Data since last 5 minutes")
+
+		self.time_diff = datetime.now() - timedelta(minutes=5)
 
 		self.print_user_data()
 		print("-"*50)
@@ -69,7 +73,7 @@ class TwitterStreamer():
 
 		user_report = PrettyTable(['User', "Tweets"])
 
-		for row in self.db.tweet_count.find():
+		for row in self.db.tweet_count.find({"timestamp": {"$gt": self.time_diff}}):
 			user_report.add_row([row["user"], row["tweets"]])
 
 		print(user_report)
@@ -82,15 +86,15 @@ class TwitterStreamer():
 		'''
 
 		link_report = PrettyTable(['Domain', "Count"])
-		failed_urls = self.db.failed_urls.find()
-		link_count, failed_count = 0, failed_urls.count()
+		failed_count = self.db.failed_urls.find({"timestamp": {"$gt": self.time_diff}}).count()
+		link_count = 0
 
-		for row in self.db.link_url.find().sort('count', pymongo.DESCENDING):
+		for row in self.db.link_url.find({"timestamp": {"$gt": self.time_diff}}).sort('count', pymongo.DESCENDING):
 			link_count += row["count"]
 			link_report.add_row([row["domain"], row["count"]])
 
 		print("Total links = " + str(failed_count + link_count))
-		print("Failed to resolve links = " + str(failed_urls.count()))
+		print("Failed to resolve links = " + str(failed_count))
 		print(link_report)
 
 	def print_words_data(self):
@@ -98,7 +102,7 @@ class TwitterStreamer():
 
 		words_report = PrettyTable(['Words', "Count"])
 
-		for row in self.db.words.find().sort('count', pymongo.DESCENDING).limit(10):
+		for row in self.db.words.find({"timestamp": {"$gt": self.time_diff}}).sort('count', pymongo.DESCENDING).limit(10):
 			words_report.add_row([row["word"], row["count"]])
 
 		print(words_report)
