@@ -24,7 +24,7 @@ class TwitterStreamer():
 		self.db = self.connection[creds.DB_NAME]
 		self.db.authenticate(creds.DB_USER, creds.DB_PASS)
 		self.time_diff = datetime.now()
-		self.clear_tables()
+		self.clear_tables({})
 
 	def stream_tweets(self, keywords):
 		'''
@@ -49,17 +49,18 @@ class TwitterStreamer():
 			print("Terminating Stream")
 			stream.disconnect()
 
-	def clear_tables(self):
+	def clear_tables(self, condition):
 		''' Clears out data from tables '''
-		self.db.tweet_count.remove({})
-		self.db.link_url.remove({})
-		self.db.failed_urls.remove({})
-		self.db.words.remove({})
+		self.db.tweet_count.remove(condition)
+		self.db.link_url.remove(condition)
+		self.db.failed_urls.remove(condition)
+		self.db.words.remove(condition)
 
 	def print_data(self, minute):
 		print("Data since last 5 minutes")
 
 		self.time_diff = datetime.now() - timedelta(minutes=5)
+		self.clear_tables({"timestamp": {"$lt": self.time_diff}})
 
 		self.print_user_data()
 		print("-"*50)
@@ -73,8 +74,13 @@ class TwitterStreamer():
 
 		user_report = PrettyTable(['User', "Tweets"])
 
-		for row in self.db.tweet_count.find({"timestamp": {"$gt": self.time_diff}}):
-			user_report.add_row([row["user"], row["tweets"]])
+		data = self.db.tweet_count.aggregate([
+			{"$match": {"timestamp": {"$gt": self.time_diff}}},
+			{"$group":{"_id":"$user", "sum":{"$sum":1}}}
+		])
+
+		for row in data:
+			user_report.add_row([row["_id"], row["sum"]])
 
 		print(user_report)
 
@@ -89,9 +95,15 @@ class TwitterStreamer():
 		failed_count = self.db.failed_urls.find({"timestamp": {"$gt": self.time_diff}}).count()
 		link_count = 0
 
-		for row in self.db.link_url.find({"timestamp": {"$gt": self.time_diff}}).sort('count', pymongo.DESCENDING):
-			link_count += row["count"]
-			link_report.add_row([row["domain"], row["count"]])
+		data = self.db.link_url.aggregate([
+			{"$match": {"timestamp": {"$gt": self.time_diff}}},
+			{"$group":{"_id":"$domain", "sum":{"$sum":1}}},
+			{"$sort": {"sum": -1}}, {"$limit": 10}
+		])
+
+		for row in data:
+			link_count += row["sum"]
+			link_report.add_row([row["_id"], row["sum"]])
 
 		print("Total links = " + str(failed_count + link_count))
 		print("Failed to resolve links = " + str(failed_count))
@@ -102,8 +114,14 @@ class TwitterStreamer():
 
 		words_report = PrettyTable(['Words', "Count"])
 
-		for row in self.db.words.find({"timestamp": {"$gt": self.time_diff}}).sort('count', pymongo.DESCENDING).limit(10):
-			words_report.add_row([row["word"], row["count"]])
+		data = self.db.words.aggregate([
+			{"$match": {"timestamp": {"$gt": self.time_diff}}},
+			{"$group":{"_id":"$word", "sum":{"$sum":1}}},
+			{"$sort": {"sum": -1}}, {"$limit": 10}
+		])
+
+		for row in data:
+			words_report.add_row([row["_id"], row["sum"]])
 
 		print(words_report)
 

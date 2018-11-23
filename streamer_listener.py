@@ -46,25 +46,25 @@ class StreamerListener(StreamListener):
 			incoming streaming data.
 		'''
 
-		exists = self.db.tweet_count.find_one({
-			'user': data['user']['screen_name']
-		})
+		# exists = self.db.tweet_count.find_one({
+		# 	'user': data['user']['screen_name']
+		# })
 
-		if exists:
-			self.db.tweet_count.update_one(
-				{'tweets': data['user']['screen_name']},
-				{'$set': {
-					'tweets': exists['tweets']+1,
-					'timestamp': self.timestamp
-				}},
-				upsert=False
-			)
-		else:
-			self.db.tweet_count.insert({
-				'user': data['user']['screen_name'],
-				'tweets': 1,
-				'timestamp': self.timestamp
-			})
+		# if exists:
+		# 	self.db.tweet_count.update_one(
+		# 		{'tweets': data['user']['screen_name']},
+		# 		{'$set': {
+		# 			'tweets': exists['tweets']+1,
+		# 			'timestamp': self.timestamp
+		# 		}},
+		# 		upsert=False
+		# 	)
+		# else:
+		self.db.tweet_count.insert({
+			'user': data['user']['screen_name'],
+			'tweets': 1,
+			'timestamp': self.timestamp
+		})
 
 	def parse_links_report_data(self, data):
 		'''
@@ -97,25 +97,25 @@ class StreamerListener(StreamListener):
 			Also update the count of domain if it already exists.
 		'''
 
-		exists = self.db.link_url.find_one({
-			'domain': extract.domain
-		})
+		# exists = self.db.link_url.find_one({
+		# 	'domain': extract.domain
+		# })
 
-		if exists:
-			self.db.link_url.update_one(
-				{'domain': extract.domain},
-				{'$set': {
-					'count': exists["count"]+1,
-					'timestamp': self.timestamp
-				}},
-				upsert=False
-			)
-		else:
-			self.db.link_url.insert({
-				'domain': extract.domain,
-				'count': 1,
-				'timestamp': self.timestamp
-			})
+		# if exists:
+		# 	self.db.link_url.update_one(
+		# 		{'domain': extract.domain},
+		# 		{'$set': {
+		# 			'count': exists["count"]+1,
+		# 			'timestamp': self.timestamp
+		# 		}},
+		# 		upsert=False
+		# 	)
+		# else:
+		self.db.link_url.insert({
+			'domain': extract.domain,
+			'count': 1,
+			'timestamp': self.timestamp
+		})
 
 	def parse_words(self, data):
 		'''
@@ -138,22 +138,22 @@ class StreamerListener(StreamListener):
 	def store_words(self, word, count):
 		''' store words and their count in database '''
 
-		exists = self.db.words.find_one({
-			'word': word
-		})
+		# exists = self.db.words.find_one({
+		# 	'word': word
+		# })
 
-		if exists:
-			self.db.words.update_one(
-				{'word': word},
-				{'$set': {
-					'count': exists["count"] + count,
-					'timestamp': self.timestamp
-				}},
-				upsert=False
-			)
-		else:
-			self.db.words.insert({
-				'word': word,
-				'count': count,
-				'timestamp': self.timestamp
-			})
+		# if exists:
+		# 	self.db.words.update_one(
+		# 		{'word': word},
+		# 		{'$set': {
+		# 			'count': exists["count"] + count,
+		# 			'timestamp': self.timestamp
+		# 		}},
+		# 		upsert=False
+		# 	)
+		# else:
+		self.db.words.insert({
+			'word': word,
+			'count': count,
+			'timestamp': self.timestamp
+		})
